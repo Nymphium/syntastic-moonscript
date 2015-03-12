@@ -2,36 +2,35 @@
 
 
 target=${1}
-opt=$(echo ${*} | sed -e "s/^${target}//")
+opt=${*/^${target}//}
 
-moonc_tmp=`mktemp`
-lc_tmp=`mktemp`
-format_tmp=`mktemp`
-mooncX_tmp=`mktemp`
+moonc_tmp=$(mktemp)
+lc_tmp=$(mktemp)
+format_tmp=$(mktemp)
+mooncX_tmp=$(mktemp)
 endexc="rm ${moonc_tmp} ${lc_tmp} ${format_tmp} ${mooncX_tmp}"
-invalid_arg_msg="Error: Invalid argument"
-usage="Usage: mooncheck <filename.moon> [<luacheck-arguments]"
+usage='Usage: mooncheck <filename.moon> [<luacheck-arguments]'
 
 
-[ ! $1 ] && echo ${usage} && exit 1
+[ ! "$1" ] && echo "${usage}" && exit 1
 
-if ! moonc -p ${target} 1> ${moonc_tmp} 2>&1; then
-	cat ${moonc_tmp} | awk 'NR==2' | perl -pe "s/^\D*(\d+).*?>>\s+(.*)$/Error ${target}:\1: Failed to parse \2/"
-	rm ${moonc_tmp}
+if ! moonc -p "${target}" 1> "${moonc_tmp}" 2>&1; then
+	awk 'NR==2' "${moonc_tmp}" | perl -pe "s/^\D*(\d+).*?>>\s+(.*)$/Error ${target}:\1: Failed to parse \2/"
+	rm "${moonc_tmp}"
 	exit
 fi
 
-moonc -X ${target} > ${mooncX_tmp} 2> /dev/null
+moonc -X "${target}" > "${mooncX_tmp}" 2> /dev/null
 
-luacheck ${opt} --formatter plain --no-color ${moonc_tmp} > ${lc_tmp}
+luacheck "${opt}" --formatter plain --no-color "${moonc_tmp}" > "${lc_tmp}"
 
-cat ${lc_tmp} | perl -pe "s/^.*?:(\d+):.*?\s+(.*)$/\1 \2/" >> ${format_tmp}
+perl -pie "s/^.*?:(\d+):.*?\s+(.*)$/\1 \2/" >> "${format_tmp}" "${lc_tmp}"
 
-cat ${format_tmp} | while read l; do
-	warn=$(echo ${l} | perl -pe "s/^\d+\s//")
-	ag --nocolor --nonumbers  "$(echo ${l} | perl -pe "s/^(\d+).*/^\\\d+\\\s+\1/")" ${mooncX_tmp} | perl -pe "s/^.+\s\]\s>>\s(\d+):\[\s.*$/${target}:\1 ${warn}/"
-done
+while read l; do
+	warn=$(echo "${l}" | perl -pe "s/^\d+\s//")
+	ag --nocolor --nonumbers  "$(echo "${l}" | perl -pe "s/^(\d+).*/^\\\d+\\\s+\1/")" "${mooncX_tmp}" | perl -pe "s/^.+\s\]\s>>\s(\d+):\[\s.*$/${target}:\1 ${warn}/"
+done < "${format_tmp}"
 
-exec ${endexc}
-trap ${endexc} 0
+"${endexc}"
+trap '${endexc}' 0
 

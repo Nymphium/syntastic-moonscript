@@ -53,7 +53,7 @@ endfunction
 function! SyntaxCheckers_moon_mooncheck_GetLocList() dict
     let makeprg = self.makeprgBuild({ 'args_after': ''})
 
-    let errorformat = 'Error %f:%l: %m,%f:%l %m,%-G%.%#'
+    let errorformat = '%t: %f:%l: %m,%f:%l %m,%-G%.%#'
 
     return SyntasticMake({
         \ 'makeprg': makeprg,

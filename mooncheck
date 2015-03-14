@@ -1,39 +1,41 @@
 #!/bin/bash
 
 
+[ ! "${1}" ] && echo "Usage: mooncheck <filename.moon> [<luacheck-arguments]" && exit 1
+
+set -ex
+
 target=${1}
-opt=${*#^${target}}
+target_regexfix=${target//\//\\\/}
+opt=${*#${target}}
 
 moonc_tmp=$(mktemp)
 lc_tmp=$(mktemp)
 format_tmp=$(mktemp)
 mooncX_tmp=$(mktemp)
-endexc="rm ${moonc_tmp} ${lc_tmp} ${format_tmp} ${mooncX_tmp}"
-usage='Usage: mooncheck <filename.moon> [<luacheck-arguments]'
+
+trap 'rm ${moonc_tmp} ${lc_tmp} ${format_tmp} ${mooncX_tmp} > /dev/null 2>&1' 0 1 2 3 15
 
 
-[ ! "${1}" ] && echo "${usage}" && exit 1
-
-if ! moonc -p "${target}" 1> "${moonc_tmp}" 2>&1; then
-	awk 'NR==2' "${moonc_tmp}" | perl -pe "s/^\D*(\d+).*?>>\s+(.*)$/Error ${target}:\1: Failed to parse \2/"
-	rm "${moonc_tmp}"
-	exit
+# Syntax error
+if ! moonc -p "${target}" > "${moonc_tmp}" 2>&1; then
+	awk 'NR==2' "${moonc_tmp}" | perl -pe "s/^\D*(\d+).*?>>\s+(.*)$/E: ${target_regexfix}:\1: Failed to parse/"
+	exit 1
 fi
 
+# check lua file parsed
+luacheck ${opt} --formatter plain --no-color "${moonc_tmp}" > "${lc_tmp}" || :
+
+perl -pe "s/^.*?:(\d+):.*?\s+(.*)$/\1 \2/" < "${lc_tmp}" > "${format_tmp}"
+
+# compare the line of lua file parsed and target moon file
 moonc -X "${target}" > "${mooncX_tmp}" 2> /dev/null
 
-luacheck "${opt}" --formatter plain --no-color "${moonc_tmp}" > "${lc_tmp}"
 
-# perl -pie "s/^.*?:(\d+):.*?\s+(.*)$/\1 \2/" >> "${format_tmp}" "${lc_tmp}"
-cat "${lc_tmp}" | perl -pe "s/^.*?:(\d+):.*?\s+(.*)$/\1 \2/" >> "${format_tmp}"
-
+# refer luacheck'error line to target moon file
 while read l; do
 	warn=$(echo "${l}" | perl -pe "s/^\d+\s//")
-	# warn=${${l}/^[0-9]\+\s\+//}
-	# ag --nocolor --nonumbers  "$(echo "${l}" | perl -pe "s/^(\d+).*/^\\\d+\\\s+\1/")" "${mooncX_tmp}" | perl -pe "s/^.+\s\]\s>>\s(\d+):\[\s.*$/${target}:\1 ${warn}/"
-	ag --nocolor --nonumbers  "${${l}/^\([0-9]\+\).*/^\\\\d+\\\\s+\1/}" "${mooncX_tmp}" | perl -pe "s/^.+\s\]\s>>\s(\d+):\[\s.*$/${target}:\1 ${warn}/"
+	arg=$(echo "${l}" | perl -pe "s/^(\d+).*$/^\\\\d+\\\\s+\1:/")
+	ag --nocolor --nonumbers  "${arg}" "${mooncX_tmp}" | perl -pe "s/^\d+.+?\s\]\s>>\s(\d+):.*$/W: ${target_regexfix}:\1: ${warn}/"
 done < "${format_tmp}"
-
-"${endexc}"
-trap '${endexc}' 0
 

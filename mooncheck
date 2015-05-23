@@ -3,11 +3,21 @@
 
 [ ! "${1}" ] && echo "Usage: mooncheck <filename.moon> [<luacheck-arguments]" && exit 1
 
-set -ex
+set -e
 
-target=${1}
+opt=""
+target=""
+
+for i in "${@}"; do
+	if [[ "${i}" =~ ^-[a-zA-Z]+$ ]]; then
+		opt="${opt} ${i}"
+	else
+		target="${i}"
+	fi
+done
+
 target_regexfix=${target//\//\\\/}
-opt=${*#${target}}
+
 
 moonc_tmp=$(mktemp)
 lc_tmp=$(mktemp)
@@ -24,6 +34,7 @@ if ! moonc -p "${target}" > "${moonc_tmp}" 2>&1; then
 fi
 
 # check lua file parsed
+# shellcheck disable=SC2086
 luacheck ${opt} --formatter plain --no-color "${moonc_tmp}" > "${lc_tmp}" || :
 
 perl -pe "s/^.*?:(\d+):.*?\s+(.*)$/\1 \2/" < "${lc_tmp}" > "${format_tmp}"

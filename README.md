@@ -8,15 +8,18 @@ As the name says, [Syntastic](https://github.com/scrooloose/syntastic)-Checker f
 3. `ln -s /path/to/mooncheck.vim ~/.vim/bundle/syntastic/syntax_checkers/moon`
 4. `ln -s mooncheck whenever-in-the-$PATH`
 
-`### I'll automate all this someday...`
+*### I'll automate all this someday...*
 
 
 ### Dependencies
-Vim, MoonScript, [luacheck](http://luacheck.readthedocs.org/)
+- (Vim)
+- (MoonScript)
+- [luacheck](http://luacheck.readthedocs.org/)
+- The Silver Searcher(`ag`)
 
 
-### Usage
-Now it isn't able to use `g:syntastic_moon_mooncheck_args`...
+### Options
+same as `luacheck`, but only the argument which works independently(eg. `-g`, `-u`, ...)
 
 
 ### License

@@ -25,26 +25,26 @@ set cpo&vim
 
 function! SyntaxCheckers_moon_mooncheck_GetHighlightRegex(item)
     let term = matchstr(a:item['text'], '\m''\zs\S\+\ze''')
-    if term != ''
+    if term !=# ''
         return '\V\<' . escape(term, '\') . '\>'
     endif
 
     let term = matchstr(a:item['text'], '\m\(accessing undefined\|setting non-standard global\|' .
                 \ 'setting non-module global\|unused global\) variable \zs\S\+')
-    if term == ''
+    if term ==# ''
         let term = matchstr(a:item['text'], '\mvariable \zs\S\+\ze was previously defined')
     endif
-    if term == ''
+    if term ==# ''
         let term = matchstr(a:item['text'], '\munused \(variable\|argument\|loop variable\) \zs\S\+')
     endif
-    if term == ''
+    if term ==# ''
         let term = matchstr(a:item['text'], '\m\(value assigned to variable\|value of argument\|' .
                 \ 'value of loop variable\) \zs\S\+')
     endif
-    if term == ''
+    if term ==# ''
         let term = matchstr(a:item['text'], '\mvariable \zs\S\+\ze is never set')
     endif
-    if term != ''
+    if term !=# ''
         return '\V\<' . escape(term, '\') . '\>'
     endif
 

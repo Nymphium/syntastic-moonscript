@@ -10,7 +10,7 @@ mk_syntaxdir:
 	$(MKDIR) -p $(SYNTAXDIR)
 
 lnk: mk_syntaxdir
-	$(LN) -s $(PLUGDIR)/$(MOONCHECK) $(SYNTAXDIR)
+	$(LN) -sf $(PLUGDIR)/$(MOONCHECK) $(SYNTAXDIR)
 
 clean:
 	rm $(SYNTAXDIR)/$(MOONCHECK) || :

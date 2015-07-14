@@ -8,6 +8,7 @@ It's easy to install by using [NeoBundle](https://github.com/Shougo/NeoBundle.vi
 "in vimrc
 
 NeoBundle 'nymphium/syntastic-moonscript', {
+\	'depends' : []'scrooloose/syntastic'],
 \	'build' :  {
 \		'linux' : 'make'
 \		}
@@ -16,7 +17,14 @@ NeoBundle 'nymphium/syntastic-moonscript', {
 ...
 
 let g:syntastic_moon_checkers = ['/home/nymphiu/.vim/bundle/syntastic-mooncheck/mooncheck']
-" or symlink `mooncheck' to a dir in $PATH
+" or symlink `mooncheck' to a dir in $PATH and  substitute the rightside to ['mooncheck']
+```
+
+or make
+```bash
+$ git clone https://github.com/Nymphium/syntastic-moonscript
+$ cd syntastic-moonscript
+$ make
 ```
 
 ### Dependencies

@@ -1,15 +1,23 @@
 ## Syntastic-Checker for MoonScript
 As the name says, [Syntastic](https://github.com/scrooloose/syntastic)-Checker for [MoonScript](http://moonscript.org/)
 
-
 ### Intro
-1. `git clone git@github.com:Nymphium/syntastic-moonscript`
-2. `mkdir ~/.vim/bundle/syntastic/syntax_checkers/moon`
-3. `ln -s /path/to/mooncheck.vim ~/.vim/bundle/syntastic/syntax_checkers/moon`
-4. `ln -s mooncheck whenever-in-the-$PATH`
+It's easy to install by using [NeoBundle](https://github.com/Shougo/NeoBundle.vim).
+```Vim
+...
+"in vimrc
 
-*### I'll automate all this someday...*
+NeoBundle 'nymphium/syntastic-moonscript', {
+\	'build' :  {
+\		'linux' : 'make'
+\		}
+\	}
 
+...
+
+let g:syntastic_moon_checkers = ['/home/nymphiu/.vim/bundle/syntastic-mooncheck/mooncheck']
+" or symlink `mooncheck' to a dir in $PATH
+```
 
 ### Dependencies
 - (Vim)
@@ -17,11 +25,8 @@ As the name says, [Syntastic](https://github.com/scrooloose/syntastic)-Checker f
 - [luacheck](http://luacheck.readthedocs.org/)
 - The Silver Searcher(`ag`)
 
-
 ### Options
 same as `luacheck`, but only the argument which works independently(eg. `-g`, `-u`, ...)
 
-
 ### License
 [WTFPL](http://www.wtfpl.net/) v2
-

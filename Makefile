@@ -2,6 +2,7 @@ MKDIR = mkdir
 LN = ln
 LUACHECK = luacheck
 ECHO = echo
+BINPATH ?= $(HOME)/bin
 
 PLUGDIR = $(HOME)/.vim/bundle/syntastic-moonscript
 SYNTAXDIR = $(HOME)/.vim/syntax_checkers/moon
@@ -16,12 +17,13 @@ mk_syntaxdir: luacheckcheck
 
 lnk: mk_syntaxdir
 	-$(LN) -s $(PLUGDIR)/$(MOONCHECK).vim $(SYNTAXDIR)
-	-[ -d $(HOME)/bin ] && $(LN) -s $(PLUGDIR)/$(MOONCHECK) $(HOME)/bin
+	-$(LN) -s $(PLUGDIR)/$(MOONCHECK) $(BINPATH)
 
 luacheckcheck:
 	$(LUACHECK) --version
 
 
 clean:
-	-rm $(SYNTAXDIR)/$(MOONCHECK)
+	-rm $(SYNTAXDIR)/$(MOONCHECK).vim
+	-rm $(BINPATH)/$(MOONCHECK)
 

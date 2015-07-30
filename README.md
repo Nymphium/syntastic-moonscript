@@ -14,10 +14,19 @@ NeoBundle 'nymphium/syntastic-moonscript', {
 \		}
 \	}
 
+" `make' provides symlink 'mooncheck' to '$HOME/bin'
+" or add directorypath to `make':
+"...
+" \	'build' :  {
+" \		'linux' : 'make BINPATH=path/to/bin'
+" \		}
+"...
+
+
 ...
 
-let g:syntastic_moon_checkers = ['/home/nymphiu/.vim/bundle/syntastic-mooncheck/mooncheck']
-" or symlink `mooncheck' to a dir in $PATH and  substitute the rightside to ['mooncheck']
+let g:syntastic_moon_checkers = [..., 'mooncheck', ...]
+let g:syntastic_moon_mooncheck_args = [.....]
 ```
 
 or make

@@ -5,7 +5,7 @@ ECHO = echo
 
 PLUGDIR = $(HOME)/.vim/bundle/syntastic-moonscript
 SYNTAXDIR = $(HOME)/.vim/syntax_checkers/moon
-MOONCHECK = moonckeck.vim
+MOONCHECK = mooncheck
 
 ERRORMSG = "ERROR: not exist 'luacheck', install it before"
 
@@ -15,7 +15,8 @@ mk_syntaxdir: luacheckcheck
 	$(MKDIR) -p $(SYNTAXDIR)
 
 lnk: mk_syntaxdir
-	$(LN) -sf $(PLUGDIR)/$(MOONCHECK) $(SYNTAXDIR)
+	-$(LN) -s $(PLUGDIR)/$(MOONCHECK).vim $(SYNTAXDIR)
+	-[ -d $(HOME)/bin ] && $(LN) -s $(PLUGDIR)/$(MOONCHECK) $(HOME)/bin
 
 luacheckcheck:
 	$(LUACHECK) --version

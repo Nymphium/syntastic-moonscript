@@ -25,7 +25,7 @@ NeoBundle 'nymphium/syntastic-moonscript', {
 
 ...
 
-let g:syntastic_moon_checkers = [..., 'mooncheck', ...]
+let g:syntastic_moon_checkers = [..., 'moonc', 'mooncheck', ...]
 let g:syntastic_moon_mooncheck_args = [.....]
 ```
 

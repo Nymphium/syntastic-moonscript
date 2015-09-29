@@ -21,7 +21,7 @@ endif
 let g:loaded_syntastic_moon_mooncheck_checker = 1
 
 function! SyntaxCheckers_moon_mooncheck_GetLocList() dict
-    let makeprg = self.makeprgBuild()
+    let makeprg = self.makeprgBuild({})
 
     let errorformat = '%t: %f:%l: %m,%f:%l %m,%-G%.%#'
 

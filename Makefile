@@ -22,7 +22,7 @@ all: lnk
 
 neobundle: lnk
 	$(ECHO) 'let g:syntastic_moon_mooncheck_exec = "$(PLUGDIR)/mooncheck"' >> $(SYNTASTICDIR)/$(MOONCHECK).vim
-	$(ECHO) 'let g:syntastic_moon_moonc_exec = "$(PLUGDIR)/mooncheck"' >> $(SYNTASTICDIR)/$(MOONC).vim
+	$(ECHO) 'let g:syntastic_moon_moonc_exec = "$(PLUGDIR)/moonclint"' >> $(SYNTASTICDIR)/$(MOONC).vim
 
 mk_syntaxdir: luacheckcheck
 	$(MKDIR) -p $(SYNTASTICDIR)

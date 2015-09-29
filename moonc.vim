@@ -36,5 +36,3 @@ endfunction
 call g:SyntasticRegistry.CreateAndRegisterChecker({
     \ 'filetype': 'moon',
     \ 'name': 'moonc'})
-
-" let g:syntastic_moon_moonc_exec = "/home/nymphium/works/github/syntastic-moonscript/moonclint"

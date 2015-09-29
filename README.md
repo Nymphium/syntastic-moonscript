@@ -10,7 +10,7 @@ It's easy to install by using [NeoBundle](https://github.com/Shougo/NeoBundle.vi
 NeoBundle 'nymphium/syntastic-moonscript', {
 \	'depends' : []'scrooloose/syntastic'],
 \	'build' :  {
-\		'linux' : 'make'
+\		'linux' : 'make neobundle'
 \		}
 \	}
 
@@ -47,3 +47,4 @@ same as `luacheck`, but only the argument which works independently(eg. `-g`, `-
 
 ### License
 [WTFPL](http://www.wtfpl.net/) v2
+

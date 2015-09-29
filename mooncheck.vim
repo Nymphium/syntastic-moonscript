@@ -20,38 +20,8 @@ if exists("g:loaded_syntastic_moon_mooncheck_checker")
 endif
 let g:loaded_syntastic_moon_mooncheck_checker = 1
 
-let s:save_cpo = &cpo
-set cpo&vim
-
-function! SyntaxCheckers_moon_mooncheck_GetHighlightRegex(item)
-    let term = matchstr(a:item['text'], '\m''\zs\S\+\ze''')
-    if term !=# ''
-        return '\V\<' . escape(term, '\') . '\>'
-    endif
-
-    let term = matchstr(a:item['text'], '\m\(accessing undefined\|setting non-standard global\|' .
-                \ 'setting non-module global\|unused global\) variable \zs\S\+')
-    if term ==# ''
-        let term = matchstr(a:item['text'], '\mvariable \zs\S\+\ze was previously defined')
-    endif
-    if term ==# ''
-        let term = matchstr(a:item['text'], '\munused \(variable\|argument\|loop variable\) \zs\S\+')
-    endif
-    if term ==# ''
-        let term = matchstr(a:item['text'], '\m\(value assigned to variable\|value of argument\|' .
-                \ 'value of loop variable\) \zs\S\+')
-    endif
-    if term ==# ''
-        let term = matchstr(a:item['text'], '\mvariable \zs\S\+\ze is never set')
-    endif
-    if term !=# ''
-        return '\V\<' . escape(term, '\') . '\>'
-    endif
-
-endfunction
-
 function! SyntaxCheckers_moon_mooncheck_GetLocList() dict
-    let makeprg = self.makeprgBuild({ 'args_after': ''})
+    let makeprg = self.makeprgBuild()
 
     let errorformat = '%t: %f:%l: %m,%f:%l %m,%-G%.%#'
 
@@ -67,8 +37,3 @@ call g:SyntasticRegistry.CreateAndRegisterChecker({
     \ 'filetype': 'moon',
     \ 'name': 'mooncheck'})
 
-let &cpo = s:save_cpo
-unlet s:save_cpo
-
-
-" vim: set sw=4 sts=4 et fdm=marker:

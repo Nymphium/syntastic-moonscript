@@ -11,6 +11,7 @@ PLUGDIR = $(HOME)/.vim/bundle/syntastic-moonscript
 SYNTASTICDIR = $(HOME)/.vim/syntax_checkers/moon
 MOONCHECK = mooncheck
 MOONC = moonc
+MOONCLINT = moonclint
 
 ERRORMSG = "ERROR: not exist 'luacheck', install it before"
 
@@ -21,8 +22,8 @@ all: lnk
 	-$(LN) -s $(PLUGDIR)/$(MOONC) $(BINPATH)
 
 neobundle: lnk
-	$(ECHO) 'let g:syntastic_moon_mooncheck_exec = "$(PLUGDIR)/mooncheck"' >> $(SYNTASTICDIR)/$(MOONCHECK).vim
-	$(ECHO) 'let g:syntastic_moon_moonc_exec = "$(PLUGDIR)/moonclint"' >> $(SYNTASTICDIR)/$(MOONC).vim
+	$(ECHO) 'let g:syntastic_moon_mooncheck_exec = "$(PLUGDIR)/$(MOONCHECK)"' >> $(SYNTASTICDIR)/$(MOONCHECK).vim
+	$(ECHO) 'let g:syntastic_moon_moonc_exec = "$(PLUGDIR)/$(MOONCLINT)"' >> $(SYNTASTICDIR)/$(MOONC).vim
 
 mk_syntaxdir: luacheckcheck
 	$(MKDIR) -p $(SYNTASTICDIR)
@@ -39,5 +40,5 @@ clean:
 	-$(RM) $(SYNTASTICDIR)/$(MOONCHECK).vim
 	-$(RM) $(SYNTASTICDIR)/$(MOONC).vim
 	-$(RM) $(BINPATH)/$(MOONCHECK)
-	-$(RM) $(BINPATH)/$(MOONC)
+	-$(RM) $(BINPATH)/$(MOONCLINT)
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-[ ! "${1}" ] && echo "Usage: mooncheck <filename.moon> [<luacheck-arguments]" && exit 1
+[[ ! "${1}" ]] && echo "Usage: mooncheck <filename.moon> [<luacheck-arguments]" && exit 1
 
 set -e
 
@@ -25,8 +25,8 @@ mooncX_tmp=$(mktemp)
 
 trap 'rm ${moonc_tmp} ${lc_tmp} ${format_tmp} ${mooncX_tmp} > /dev/null 2>&1' 0 1 2 3 15
 
-# Syntax error
-if ! moonc -o "${moonc_tmp}" "${target}" 2>&1; then
+# Syntax error, get code or error message
+if ! moonc -p "${target}" > "${moonc_tmp}" 2>&1; then
 	awk 'NR==2' "${moonc_tmp}" | perl -pe "s/^\D*(\d+).*?>>\s+(.*)$/E: ${target_regexfix}:\1: Failed to parse/"
 	exit 1
 fi

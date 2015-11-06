@@ -6,7 +6,7 @@ CP = cp
 RM = rm
 LUACHECK = luacheck
 BINPATH ?= $(HOME)/bin
-INIT = autoload/syntastic-moonscript.vim
+INIT = ftplugin/init.vim
 
 PLUGDIR = $(HOME)/.vim/bundle/syntastic-moonscript
 SYNTASTICDIR = $(HOME)/.vim/syntax_checkers/moon

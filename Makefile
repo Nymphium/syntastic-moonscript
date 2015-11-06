@@ -6,6 +6,7 @@ CP = cp
 RM = rm
 LUACHECK = luacheck
 BINPATH ?= $(HOME)/bin
+INIT = autoload/syntastic-moonscript.vim
 
 PLUGDIR = $(HOME)/.vim/bundle/syntastic-moonscript
 SYNTASTICDIR = $(HOME)/.vim/syntax_checkers/moon
@@ -22,8 +23,8 @@ all: lnk
 	-$(LN) -s $(PLUGDIR)/$(MOONC) $(BINPATH)
 
 neobundle: lnk
-	$(ECHO) 'let g:syntastic_moon_mooncheck_exec = "$(PLUGDIR)/$(MOONCHECK)"' >> $(SYNTASTICDIR)/$(MOONCHECK).vim
-	$(ECHO) 'let g:syntastic_moon_moonc_exec = "$(PLUGDIR)/$(MOONCLINT)"' >> $(SYNTASTICDIR)/$(MOONC).vim
+	$(ECHO) 'let g:syntastic_moon_mooncheck_exec = "$(PLUGDIR)/$(MOONCHECK)"' >> $(INIT)
+	$(ECHO) 'let g:syntastic_moon_moonc_exec = "$(PLUGDIR)/$(MOONCLINT)"' >> $(INIT)
 
 mk_syntaxdir: luacheckcheck
 	$(MKDIR) -p $(SYNTASTICDIR)
@@ -32,7 +33,7 @@ lnk: mk_syntaxdir
 	-$(CP) $(PLUGDIR)/$(MOONCHECK).vim $(SYNTASTICDIR)
 	-$(CP) $(PLUGDIR)/$(MOONC).vim $(SYNTASTICDIR)
 
-luacheckcheck:
+luacheckcheck: clean
 	$(LUACHECK) --version
 
 

@@ -20,6 +20,9 @@ if exists("g:loaded_syntastic_moon_moonc_checker")
 endif
 let g:loaded_syntastic_moon_moonc_checker = 1
 
+let s:save_cpo = &cpo
+set cpo&vim
+
 function! SyntaxCheckers_moon_moonc_GetLocList() dict
     let makeprg = self.makeprgBuild({})
 
@@ -36,3 +39,6 @@ endfunction
 call g:SyntasticRegistry.CreateAndRegisterChecker({
     \ 'filetype': 'moon',
     \ 'name': 'moonc'})
+
+let &cpo = s:save_cpo
+unlet s:save_cpo

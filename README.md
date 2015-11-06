@@ -8,7 +8,7 @@ It's easy to install by using [NeoBundle](https://github.com/Shougo/NeoBundle.vi
 "in vimrc
 
 NeoBundle 'nymphium/syntastic-moonscript', {
-\	'depends' : []'scrooloose/syntastic'],
+\	'depends' : ['scrooloose/syntastic'],
 \	'build' :  {
 \		'linux' : 'make neobundle'
 \		}
@@ -21,9 +21,6 @@ NeoBundle 'nymphium/syntastic-moonscript', {
 " \		'linux' : 'make BINPATH=path/to/bin'
 " \		}
 "...
-
-
-...
 
 let g:syntastic_moon_checkers = [..., 'moonc', 'mooncheck', ...]
 let g:syntastic_moon_mooncheck_args = [.....]
@@ -45,6 +42,8 @@ $ make
 ### Options
 same as `luacheck`, but only the argument which works independently(eg. `-g`, `-u`, ...)
 
+### Neovim
+If you use [Neovim](http://github.com/neovim/neovim), please symlink `~/.vim/syntax_checkers` to `~/.config/nvim`.
+
 ### License
 [WTFPL](http://www.wtfpl.net/) v2
-

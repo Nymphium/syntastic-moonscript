@@ -1,49 +1,60 @@
-#!/bin/bash
+#!/usr/bin/env moon
 
 
-[[ ! "${1}" ]] && echo "Usage: mooncheck <filename.moon> [<luacheck-arguments]" && exit 1
+unless arg[1]
+	print "Usage: mooncheck <filename.moon> [<luacheck-arguments]"
+	os.exit 1
 
-set -e
+class Cmd
+	new: (cmd) =>
+		@cmd = cmd
+		@
+	arg: (...) =>
+		if @args
+			@args ..= " " .. table.concat {...}, " "
+		else
+			@args = table.concat {...}, " "
 
-opt=""
-target=""
+		@
+	run: =>
+		cmd = io.popen "#{@cmd} #{@args} 2>&1"
+		ret = cmd\read "*a"
+		_, _, ec = cmd\close!
+		ret, ec
 
-for i in "${@}"; do
-	if [[ "${i}" =~ ^-[a-zA-Z]+$ ]]; then
-		opt="${opt} ${i}"
+opt, target = "", ""
+
+for i in *arg
+	if i\match "^%-[a-zA-Z]+$"
+		opt ..= " #{i}"
 	else
-		target="${i}"
-	fi
-done
+		target = i
 
-target_regexfix=${target//\//\\\/}
+cont, ec = Cmd("moonc")\arg("-p", target)\run!
 
-moonc_tmp=$(mktemp)
-lc_tmp=$(mktemp)
-format_tmp=$(mktemp)
-mooncX_tmp=$(mktemp)
+if ec > 0
+	print "E: #{target}:" .. cont\match("\n.-(%d+).*$") .. ": Failed to parse"
+	os.exit 1
 
-trap 'rm ${moonc_tmp} ${lc_tmp} ${format_tmp} ${mooncX_tmp} > /dev/null 2>&1' 0 1 2 3 15
+fn = os.tmpname!
+fh = io.open fn, "a+"
+fh\write cont
+fh\seek "set"
+lc_tmp = Cmd("luacheck")\arg(opt, "--formatter", "plain", "--no-color", fn)\run!
+fh\close!
+os.remove fn
+mooncx_tmp = Cmd("moonc")\arg("-X", target)\run!
+buf = {}
 
-# Syntax error, get code or error message
-if ! moonc -p "${target}" > "${moonc_tmp}" 2>&1; then
-	awk 'NR==2' "${moonc_tmp}" | perl -pe "s/^\D*(\d+).*?>>\s+(.*)$/E: ${target_regexfix}:\1: Failed to parse/"
-	exit 1
-fi
+for l in mooncx_tmp\gmatch "(.-)\n"
+	b, a = l\match("^%d+%s+(%d+):%[.*%]%s+>>%s(%d+)")
 
-# check lua file parsed
-# shellcheck disable=SC2086
-luacheck ${opt} --formatter plain --no-color "${moonc_tmp}" > "${lc_tmp}" || :
+	if b_ = tonumber b
+		buf[b_] = tonumber a
 
-perl -i -pe "s/^.*?:(\d+):.*?\s+(.*)$/\1 \2/" "${lc_tmp}"
+for l in lc_tmp\gmatch "(.-)\n"
+	ln, warn = l\match(":(%d+):.-%s+(.*)$")
 
-awk '!a[$0]++' "${lc_tmp}" > "${format_tmp}"
-
-# compare the line of lua file parsed and target moon file
-moonc -X "${target}" 2>/dev/null | sed -e 's/^[0-9]\+\s\+\([0-9]\+\).*\s\]\s>>\s\([0-9]\+\).*$/\1:\2/' > "${mooncX_tmp}"
-
-# refer luacheck'error line to target moon file
-while read l; do
-	ag --nocolor --nonumbers  "^${l%%[^0-9]*}:" "${mooncX_tmp}" | sed -e "s/^[0-9]\+:\([0-9]\+\)$/W: ${target_regexfix}:\1: ${l#[0-9]* }/"
-done < "${format_tmp}"
+	if ln_ = tonumber ln
+		print "W: #{target}:#{buf[ln_]}:#{warn}" if buf[ln_]
 

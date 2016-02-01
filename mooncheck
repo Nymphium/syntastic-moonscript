@@ -75,7 +75,7 @@ class Kks
 	__newindex: (k) =>
 		unless @[k] then rawset @, k, k
 	add: (k) => @[k] = _
-	pairs: => pairs @
+	printpairs: => for _, v in pairs @ do print v
 
 lbuf = Kks!
 
@@ -85,6 +85,5 @@ for l in lc_tmp\gmatch "(.-)\n"
 	if ln_ = tonumber ln
 		lbuf\add "W: #{target}:#{buf[ln_]}:#{warn}" if buf[ln_]
 
-for _, v in lbuf\pairs!
-	print v
+lbuf\printpairs!
 

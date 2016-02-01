@@ -5,6 +5,7 @@ MAKE = make
 CP = cp
 RM = rm
 LUACHECK = luacheck
+TYPEDLUA = tlc
 BINPATH ?= $(HOME)/bin
 FTPLUGIN = ftplugin/moon.vim
 
@@ -16,7 +17,7 @@ MOONCLINT = moonclint
 
 ERRORMSG = "ERROR: not exist 'luacheck', install it before"
 
-.PHONY: all neobundle mk_syntaxdir lnk luacheckcheck clean
+.PHONY: all neobundle mk_syntaxdir lnk luacheckcheck typedluacheck clean
 
 all: lnk
 	-$(LN) -s $(PLUGDIR)/$(MOONCHECK) $(BINPATH)
@@ -26,7 +27,7 @@ neobundle: lnk
 	$(ECHO) 'let g:syntastic_moon_mooncheck_exec = "$(PLUGDIR)/$(MOONCHECK)"' > $(FTPLUGIN)
 	$(ECHO) 'let g:syntastic_moon_moonc_exec = "$(PLUGDIR)/$(MOONCLINT)"' >> $(FTPLUGIN)
 
-mk_syntaxdir: luacheckcheck
+mk_syntaxdir: typedluacheck
 	$(MKDIR) -p $(SYNTASTICDIR)
 
 lnk: mk_syntaxdir
@@ -35,6 +36,9 @@ lnk: mk_syntaxdir
 
 luacheckcheck: clean
 	$(LUACHECK) --version
+
+typedluacheck: luacheckcheck
+	$(TYPEDLUA) -v
 
 
 clean:

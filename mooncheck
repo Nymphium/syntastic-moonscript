@@ -22,27 +22,46 @@ class Cmd
 		_, _, ec = cmd\close!
 		ret, ec
 
-opt, target = "", ""
+opt, target, typeflag = "", ""
 
 for i in *arg
 	if i\match "^%-[a-zA-Z]+$"
 		opt ..= " #{i}"
+	elseif i\match "^%-%-type"
+		typeflag = true
 	else
 		target = i
+
+err_msg = (is_abort, ...) ->
+	io.stderr\write "E: %s: %s: Failed to parse"\format(...) .. '\n'
+	os.exit 1 if is_abort
 
 cont, ec = Cmd("moonc")\arg("-p", target)\run!
 
 if ec > 0
-	print "E: #{target}:" .. cont\match("\n.-(%d+).*$") .. ": Failed to parse"
-	os.exit 1
+	err_msg true, target, cont\match("\n.-(%d+).*$")
 
 fn = os.tmpname!
 fh = io.open fn, "a+"
 fh\write cont
 fh\seek "set"
-lc_tmp = Cmd("luacheck")\arg(opt, "--formatter", "plain", "--no-color", fn)\run!
+
+lc_tmp, ec = Cmd("luacheck")\arg(opt, "--formatter", "plain", "--no-color", fn)\run!
+
+if ec > 0 and #lc_tmp < 1
+	err_msg true, nil, lc_tmp
+
+if typeflag
+	cont, ec = Cmd("tlc")\arg("-w", "-s", fn)\run!
+
+	if ec > 0 and #cont < 1
+		err_msg true, nil, cont
+
+	lc_tmp ..= cont
+
 fh\close!
 os.remove fn
+
 mooncx_tmp = Cmd("moonc")\arg("-X", target)\run!
 buf = {}
 
@@ -52,9 +71,20 @@ for l in mooncx_tmp\gmatch "(.-)\n"
 	if b_ = tonumber b
 		buf[b_] = tonumber a
 
+class Kks
+	__newindex: (k) =>
+		unless @[k] then rawset @, k, k
+	add: (k) => @[k] = _
+	pairs: => pairs @
+
+lbuf = Kks!
+
 for l in lc_tmp\gmatch "(.-)\n"
 	ln, warn = l\match(":(%d+):.-%s+(.*)$")
 
 	if ln_ = tonumber ln
-		print "W: #{target}:#{buf[ln_]}:#{warn}" if buf[ln_]
+		lbuf\add "W: #{target}:#{buf[ln_]}:#{warn}" if buf[ln_]
+
+for _, v in lbuf\pairs!
+	print v
 

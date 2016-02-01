@@ -9,11 +9,18 @@ TYPEDLUA = tlc
 BINPATH ?= $(HOME)/bin
 FTPLUGIN = ftplugin/moon.vim
 
-PLUGDIR = $(HOME)/.vim/bundle/syntastic-moonscript
+PLUGDIR_ = $(HOME)/.vim/bundle/syntastic-moonscript
 SYNTASTICDIR = $(HOME)/.vim/syntax_checkers/moon
 MOONCHECK = mooncheck
 MOONC = moonc
 MOONCLINT = moonclint
+
+BRANCH = $(shell ./git_current_branch.sh)
+
+ifneq ($(BRANCH),master)
+	PLUGDIR = $(PLUGDIR_)_$(BRANCH)
+endif
+
 
 ERRORMSG = "ERROR: not exist 'luacheck', install it before"
 

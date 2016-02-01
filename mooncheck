@@ -52,7 +52,7 @@ if ec > 0 and #lc_tmp < 1
 	err_msg true, nil, lc_tmp
 
 if typeflag
-	cont, ec = Cmd("tlc")\arg("-w", "-s", "-o ''" fn)\run!
+	cont, ec = Cmd("tlc")\arg("-w", "-s", "-o ''", fn)\run!
 
 	if ec > 0 and #cont < 1
 		err_msg true, nil, cont

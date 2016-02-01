@@ -19,6 +19,8 @@ BRANCH = $(shell ./git_current_branch.sh)
 
 ifneq ($(BRANCH),master)
 	PLUGDIR = $(PLUGDIR_)_$(BRANCH)
+else
+	PLUGDIR = $(PLUGDIR_)
 endif
 
 

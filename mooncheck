@@ -1,21 +1,14 @@
 #!/usr/bin/env moon
 
-
 unless arg[1]
 	print "Usage: mooncheck <filename.moon> [<luacheck-arguments>]"
 	os.exit 1
 
 class Cmd
-	new: (cmd) =>
-		@cmd = cmd
-		@
-	arg: (...) =>
-		if @args
-			@args ..= " " .. table.concat {...}, " "
-		else
-			@args = table.concat {...}, " "
-
-		@
+	new: (cmd) => with @ do .cmd = cmd
+	arg: (...) => with @
+		if .args then .args ..= " " .. table.concat {...}, " "
+		else .args = table.concat {...}, " "
 	run: =>
 		cmd = io.popen "#{@cmd} #{@args} 2>&1"
 		ret = cmd\read "*a"
@@ -24,12 +17,10 @@ class Cmd
 
 class SetStore
 	__newindex: (line, cont) =>
-		if @db.last < line
-			@db.last = line
+		if @db.last < line then @db.last = line
 		unless @db[line][cont] then @db[line][cont] = 1
 	add: (line, cont) => @[line] = cont
-	db: with db = [{} for _ = 1, 1000]
-			db.last = 0
+	db: with db = [{} for _ = 1, 1000] do .last = 0
 	print: => for i = 1, @db.last do for k in pairs @db[i] do print k
 
 opt, target, typeflag = "", ""
@@ -46,52 +37,53 @@ err_msg = (is_abort, ...) ->
 	io.stderr\write "E: %s: %s: Failed to parse"\format(...) .. '\n'
 	os.exit 1 if is_abort
 
+-- $ moonc -p target > luacont
 luacont, ec = Cmd("moonc")\arg("-p", target)\run!
 
-if ec > 0
-	err_msg true, target, luacont\match("\n.-(%d+).*$")
+if ec > 0 then err_msg true, target, luacont\match("\n.-(%d+).*$")
 
 fn = os.tmpname!
 fh = io.open fn, "a+"
 fh\write luacont
 fh\seek "set"
 
+-- $ luacheck --formatter plain --nocolor fn > luachk
 luachk, ec = Cmd("luacheck")\arg(opt, "--formatter", "plain", "--no-color", fn)\run!
 
-if ec > 0 and #luachk < 1
-	err_msg true, nil, luachk
+if ec > 0 and #luachk < 1 then err_msg true, nil, luachk
 
 if typeflag
+	-- $ tlc -w -s -o'' fn > cont
 	cont, ec = Cmd("tlc")\arg("-w", "-s", "-o ''", fn)\run!
 
 	if ec > 0 and #cont < 1
 		err_msg true, nil, cont
 
+	-- concat luacheck and tlc's result
 	luachk ..= cont
 
 fh\close!
 os.remove fn
 
+-- $ moonc -X target > mooncx
 mooncx, ec = Cmd("moonc")\arg("-X", target)\run!
 
-if ec > 0
-	err_msg true, nil, mooncx
+if ec > 0 then err_msg true, nil, mooncx
 
 buf = {}
 
 for l in mooncx\gmatch "(.-)\n"
+	-- store b as lua linenumber, a as moon linenumber
 	b, a = l\match("^%d+%s+(%d+):%[.*%]%s+>>%s(%d+)")
 
-	if b_ = tonumber b
-		buf[b_] = tonumber a
+	if b_ = tonumber b then buf[b_] = tonumber a
 
 lbuf = SetStore!
 
 for l in luachk\gmatch "(.-)\n"
 	ln, warn = l\match(":(%d+):.-%s+(.*)$")
 
-	if ln_ = tonumber ln
-		lbuf\add ln_, "W: #{target}:#{buf[ln_]}:#{warn}" if buf[ln_]
+	if ln_ = tonumber ln then lbuf\add ln_, "W: #{target}:#{buf[ln_]}:#{warn}" if buf[ln_]
 
 lbuf\print!
 

@@ -16,12 +16,12 @@ class Cmd
 		ret, ec
 
 class SetStore
+	db = with db = [{} for _ = 1, 1000] do .last = 0
 	__newindex: (line, cont) =>
-		if @db.last < line then @db.last = line
-		unless @db[line][cont] then @db[line][cont] = 1
+		if db.last < line then db.last = line
+		unless db[line][cont] then db[line][cont] = 1
 	add: (line, cont) => @[line] = cont
-	db: with db = [{} for _ = 1, 1000] do .last = 0
-	print: => for i = 1, @db.last do for k in pairs @db[i] do print k
+	print: => for i = 1, db.last do for k in pairs db[i] do print k
 
 opt, target, typeflag = "", ""
 

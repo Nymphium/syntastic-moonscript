@@ -1,60 +1,91 @@
 #!/usr/bin/env moon
 
-
 unless arg[1]
-	print "Usage: mooncheck <filename.moon> [<luacheck-arguments]"
+	io.stderr\write "Usage: mooncheck <filename.moon> [<luacheck-arguments]\n"
 	os.exit 1
 
-class Cmd
-	new: (cmd) =>
-		@cmd = cmd
-		@
-	arg: (...) =>
-		if @args
-			@args ..= " " .. table.concat {...}, " "
+luacheck = require'luacheck'
+parse = require'moonscript.parse'
+compile = require'moonscript.compile'
+util = require'moonscript.util'
+
+warncode = {
+	["011"]: "A syntax error"
+	["021"]: "An invalid inline option"
+	["022"]: "An unpaired inline push directive"
+	["023"]: "An unpaired inline pop directive"
+	["111"]: "Setting an undefined global variable"
+	["112"]: "Mutating an undefined global variable"
+	["113"]: "Accessing an undefined global variable"
+	["121"]: "Setting a read-only global variable"
+	["122"]: "Mutating a read-only global variable"
+	["131"]: "Unused implicitly defined global variable"
+	["211"]: "Unused local variable"
+	["212"]: "Unused argument"
+	["213"]: "Unused loop variable"
+	["221"]: "Local variable is accessed but never set"
+	["231"]: "Local variable is set but never accessed"
+	["232"]: "An argument is set but never accessed"
+	["233"]: "Loop variable is set but never accessed"
+	["311"]: "Value assigned to a local variable is unused"
+	["312"]: "Value of an argument is unused"
+	["313"]: "Value of a loop variable is unused"
+	["314"]: "Value of a field in a table literal is unused"
+	["321"]: "Accessing uninitialized local variable"
+	["411"]: "Redefining a local variable"
+	["412"]: "Redefining an argument"
+	["413"]: "Redefining a loop variable"
+	["421"]: "Shadowing a local variable"
+	["422"]: "Shadowing an argument"
+	["423"]: "Shadowing a loop variable"
+	["431"]: "Shadowing an upvalue"
+	["432"]: "Shadowing an upvalue argument"
+	["433"]: "Shadowing an upvalue loop variable"
+	["511"]: "Unreachable code"
+	["512"]: "Loop can be executed at most once"
+	["521"]: "Unused label"
+	["531"]: "Left-hand side of an assignment is too short"
+	["532"]: "Left-hand side of an assignment is too long"
+	["541"]: "An empty do end block"
+	["542"]: "An empty if branch"
+	["551"]: "An empty statement"
+}
+
+lcopts = {globals: {"arg", "_"}}
+
+ok, cont = pcall ->
+	local moontext
+	io.close assert with file = io.open arg[1]
+		moontext = file\read "*a"
+
+	tree, errmsg = parse.string moontext
+	if errmsg then error errmsg
+
+	luacode, ok, errpos = compile.tree tree
+	unless ok then error errpos
+
+	posmap = util.debug_posmap ok, moontext, luacode
+	chkresult = luacheck.check_strings {luacode}, lcopts
+
+	linebuf = setmetatable {}, __len: => @len
+
+	for l in (posmap.."\n")\gmatch".-\n"
+		lline, mline = l\match"^%d+%s+(%d+):%[.*%]%s+>>%s(%d+)"
+
+		if ll_ = math.tointeger lline
+			linebuf[ll_] = tonumber mline
+			linebuf.len = ll_
+
+	memotbl = {}
+
+	for warn in *chkresult[1] do if mline = linebuf[warn.line]
+		key = "#{mline}#{warncode[warn.code]}"
+		if memotbl[key] then continue
 		else
-			@args = table.concat {...}, " "
+			memotbl[key] = true
+			print"W: #{arg[1]}:#{mline}:#{warncode[warn.code]} '#{warn.name}'"
 
-		@
-	run: =>
-		cmd = io.popen "#{@cmd} #{@args} 2>&1"
-		ret = cmd\read "*a"
-		_, _, ec = cmd\close!
-		ret, ec
-
-opt, target = "", ""
-
-for i in *arg
-	if i\match "^%-[a-zA-Z]+$"
-		opt ..= " #{i}"
-	else
-		target = i
-
-cont, ec = Cmd("moonc")\arg("-p", target)\run!
-
-if ec > 0
-	print "E: #{target}:" .. cont\match("\n.-(%d+).*$") .. ": Failed to parse"
+unless ok
+	io.stderr\write cont..'\n'
 	os.exit 1
-
-fn = os.tmpname!
-fh = io.open fn, "a+"
-fh\write cont
-fh\seek "set"
-lc_tmp = Cmd("luacheck")\arg(opt, "--formatter", "plain", "--no-color", fn)\run!
-fh\close!
-os.remove fn
-mooncx_tmp = Cmd("moonc")\arg("-X", target)\run!
-buf = {}
-
-for l in mooncx_tmp\gmatch "(.-)\n"
-	b, a = l\match("^%d+%s+(%d+):%[.*%]%s+>>%s(%d+)")
-
-	if b_ = tonumber b
-		buf[b_] = tonumber a
-
-for l in lc_tmp\gmatch "(.-)\n"
-	ln, warn = l\match(":(%d+):.-%s+(.*)$")
-
-	if ln_ = tonumber ln
-		print "W: #{target}:#{buf[ln_]}:#{warn}" if buf[ln_]
 

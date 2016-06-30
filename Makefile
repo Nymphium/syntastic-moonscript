@@ -39,8 +39,8 @@ mk_syntaxdir: luacheckcheck
 	$(MKDIR) -p $(SYNTASTICDIR)
 
 lnk: mk_syntaxdir
-	-$(CP) $(PLUGDIR)/$(MOONCHECK).vim $(SYNTASTICDIR)
-	-$(CP) $(PLUGDIR)/$(MOONC).vim $(SYNTASTICDIR)
+	-$(CP) $(PLUGDIR_)/$(MOONCHECK).vim $(SYNTASTICDIR)
+	-$(CP) $(PLUGDIR_)/$(MOONC).vim $(SYNTASTICDIR)
 
 luacheckcheck: clean
 	$(LUACHECK) --version

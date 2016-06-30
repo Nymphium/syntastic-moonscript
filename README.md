@@ -40,7 +40,7 @@ $ make
 - The Silver Searcher(`ag`)
 
 ### Options
-same as `luacheck`, but only the argument which works independently(eg. `-g`, `-u`, ...)
+same as `luacheck`
 
 ### Neovim
 If you use [Neovim](http://github.com/neovim/neovim), please symlink `~/.vim/syntax_checkers` to `~/.config/nvim`.

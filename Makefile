@@ -35,12 +35,13 @@ neobundle: lnk
 	$(ECHO) 'let g:syntastic_moon_mooncheck_exec = "$(PLUGDIR)/$(MOONCHECK)"' > $(FTPLUGIN)
 	$(ECHO) 'let g:syntastic_moon_moonc_exec = "$(PLUGDIR)/$(MOONCLINT)"' >> $(FTPLUGIN)
 
-mk_syntaxdir: luacheckcheck
+mkdir: luacheckcheck
 	$(MKDIR) -p $(SYNTASTICDIR)
+	$(MKDIR) -p $(PLUGDIR)
 
-lnk: mk_syntaxdir
-	-$(CP) $(PLUGDIR_)/$(MOONCHECK).vim $(SYNTASTICDIR)
-	-$(CP) $(PLUGDIR_)/$(MOONC).vim $(SYNTASTICDIR)
+lnk: mkdir
+	$(CP) $(PWD)/$(MOONCHECK).vim $(SYNTASTICDIR)
+	$(CP) $(PWD)/$(MOONC).vim $(SYNTASTICDIR)
 
 luacheckcheck: clean
 	$(LUACHECK) --version

@@ -37,15 +37,14 @@ $ make
 - (Vim)
 - (MoonScript)
 - [luacheck](http://luacheck.readthedocs.org/)
-- [typedlua](https://github.com/andremm/typedlua)
 - The Silver Searcher(`ag`)
+#### optional
+  - [Typed Lua](https://github.com/andremm/typedlua)
 
 ### Options
-same as `luacheck`, but only the argument which works independently(eg. `-g`, `-u`, ...)
+same as `luacheck`, and additional `--typecheck [w|s]{,2}` let it check type with Typed Lua
 
-and you want to type check, add `--type`
-
-### Neovim (general knowledge)
+### Neovim
 If you use [Neovim](http://github.com/neovim/neovim), please symlink `~/.vim/syntax_checkers` to `~/.config/nvim`.
 
 ### License

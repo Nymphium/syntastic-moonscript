@@ -1,89 +1,291 @@
 #!/usr/bin/env moon
 
-unless arg[1]
-	print "Usage: mooncheck <filename.moon> [<luacheck-arguments>]"
-	os.exit 1
 
-class Cmd
-	new: (cmd) => with @ do .cmd = cmd
-	arg: (...) => with @
-		if .args then .args ..= " " .. table.concat {...}, " "
-		else .args = table.concat {...}, " "
-	run: =>
-		cmd = io.popen "#{@cmd} #{@args} 2>&1"
-		ret = cmd\read "*a"
-		_, _, ec = cmd\close!
-		ret, ec
+ms = do
+	parse = require'moonscript.parse'
+	compile = require'moonscript.compile'
+	util = require'moonscript.util'
+	version = (require'moonscript.version').version
 
-class SetStore
-	db = with db = [{} for _ = 1, 1000] do .last = 0
-	__newindex: (line, cont) =>
-		if db.last < line then db.last = line
-		unless db[line][cont] then db[line][cont] = 1
-	add: (line, cont) => @[line] = cont
-	print: => for i = 1, db.last do for k in pairs db[i] do print k
+	{:parse, :compile, :util, :version}
 
-opt, target, typeflag = "", ""
+lc = do
+	luacheck = require "luacheck"
+	argparse = require "luacheck.argparse"
+	config = require "luacheck.config"
+	multithreading = require "luacheck.multithreading"
+	version = require "luacheck.version"
+	fs = require "luacheck.fs"
 
-for i in *arg
-	if i\match "^%-[a-zA-Z]+$"
-		opt ..= " #{i}"
-	elseif i\match "^%-%-type"
-		typeflag = true
-	else
-		target = i
+	setmetatable {:argparse, :config, :multithreading, :version, :fs}, __index: luacheck
 
-err_msg = (is_abort, ...) ->
-	io.stderr\write "E: %s: %s: Failed to parse"\format(...) .. '\n'
-	os.exit 1 if is_abort
+has_tl, tl = pcall ->
+	parser = require'typedlua.tlparser'
+	typecheck = require'typedlua.tlchecker'
 
--- $ moonc -p target > luacont
-luacont, ec = Cmd("moonc")\arg("-p", target)\run!
+	{:parser, :typecheck}
 
-if ec > 0 then err_msg true, target, luacont\match("\n.-(%d+).*$")
+warncode = {
+	["011"]: "A syntax error"
+	["021"]: "An invalid inline option"
+	["022"]: "An unpaired inline push directive"
+	["023"]: "An unpaired inline pop directive"
+	["111"]: "Setting an undefined global variable"
+	["112"]: "Mutating an undefined global variable"
+	["113"]: "Accessing an undefined global variable"
+	["121"]: "Setting a read-only global variable"
+	["122"]: "Mutating a read-only global variable"
+	["131"]: "Unused implicitly defined global variable"
+	["211"]: "Unused local variable"
+	["212"]: "Unused argument"
+	["213"]: "Unused loop variable"
+	["221"]: "Local variable is accessed but never set"
+	["231"]: "Local variable is set but never accessed"
+	["232"]: "An argument is set but never accessed"
+	["233"]: "Loop variable is set but never accessed"
+	["311"]: "Value assigned to a local variable is unused"
+	["312"]: "Value of an argument is unused"
+	["313"]: "Value of a loop variable is unused"
+	["314"]: "Value of a field in a table literal is unused"
+	["321"]: "Accessing uninitialized local variable"
+	["411"]: "Redefining a local variable"
+	["412"]: "Redefining an argument"
+	["413"]: "Redefining a loop variable"
+	["421"]: "Shadowing a local variable"
+	["422"]: "Shadowing an argument"
+	["423"]: "Shadowing a loop variable"
+	["431"]: "Shadowing an upvalue"
+	["432"]: "Shadowing an upvalue argument"
+	["433"]: "Shadowing an upvalue loop variable"
+	["511"]: "Unreachable code"
+	["512"]: "Loop can be executed at most once"
+	["521"]: "Unused label"
+	["531"]: "Left-hand side of an assignment is too short"
+	["532"]: "Left-hand side of an assignment is too long"
+	["541"]: "An empty do end block"
+	["542"]: "An empty if branch"
+	["551"]: "An empty statement"
+}
 
-fn = os.tmpname!
-fh = io.open fn, "a+"
-fh\write luacont
-fh\seek "set"
 
--- $ luacheck --formatter plain --nocolor fn > luachk
-luachk, ec = Cmd("luacheck")\arg(opt, "--formatter", "plain", "--no-color", fn)\run!
+default_cache_path = ".luacheckcache"
 
-if ec > 0 and #luachk < 1 then err_msg true, nil, luachk
+lc.parser = (=> @!) with parser = lc.argparse "mooncheck", "luacheck #{lc._VERSION}", "luacheck for moonscript\n  Luacheck: https://github.com/mpeterv/luacheck"
+		with \argument "files"
+			\description lc.fs.has_lfs and [[List of files, directories and rockspecs to check.
+Pass "-" to check stdin.]] or [[List of files and rockspecs to check.
+Pass "-" to check stdin.]]
+			\args "+"
+			\argname "<file>"
 
-if typeflag
-	-- $ tlc -w -s -o'' fn > cont
-	cont, ec = Cmd("tlc")\arg("-w", "-s", "-o ''", fn)\run!
+		with \flag("-g --no-global", [[Filter out warnings related to global variables.
+Equivalent to --ignore 1.]])
+			\target "global"
+			\action "store_false"
+		with \flag "-u --no-unused", [[Filter out warnings related to unused variables
+and values. Equivalent to --ignore [23].]]
+			\target"unused"
+			\action"store_false"
+		with \flag "-r --no-redefined", [[Filter out warnings related to redefined variables.
+Equivalent to --ignore 4.]]
+			\target"redefined"
+			\action"store_false"
 
-	if ec > 0 and #cont < 1
-		err_msg true, nil, cont
+		with \flag "-a --no-unused-args", [[Filter out warnings related to unused arguments and
+loop variables. Equivalent to --ignore 21[23].]]
+			\target"unused_args"
+			\action"store_false"
+		with \flag "-s --no-unused-secondaries", [[Filter out warnings related to unused variables set
+together with used ones.]]
+			\target"unused_secondaries"
+			\action"store_false"
+		with \flag "--no-self", "Filter out warnings related to implicit self argument."
+			\target"self"
+			\action"store_false"
 
-	-- concat luacheck and tlc's result
-	luachk ..= cont
+		parser\option "--std", [[Set standard globals. <std> can be one of:
+   _G (default) - globals of the current Lua
+      interpreter;
+   lua51 - globals of Lua 5.1;
+   lua52 - globals of Lua 5.2;
+   lua52c - globals of Lua 5.2 with LUA_COMPAT_ALL;
+   lua53 - globals of Lua 5.3;
+   lua53c - globals of Lua 5.3 with LUA_COMPAT_5_2;
+   luajit - globals of LuaJIT 2.0;
+   ngx_lua - globals of Openresty lua-nginx-module
+      with LuaJIT 2.0;
+   rockspec - globals allowed in rockspecs;
+   min - intersection of globals of Lua 5.1, Lua 5.2,
+   Lua 5.3 and LuaJIT 2.0;
+   max - union of globals of Lua 5.1, Lua 5.2, Lua 5.3
+      and LuaJIT 2.0;
+   busted - globals added by Busted 2.0;
+   none - no standard globals.
+   Sets can be combined using "+".]]
+		with \option "--globals", "Add custom globals on top of standard ones."
+			\args "*"
+			\count "*"
+			\argname "<global>"
+			\action "concat"
+			\init!
+		with \option("--read-globals", "Add read-only globals.")
+			\args "*"
+			\count "*"
+			\argname "<global>"
+			\action "concat"
+			\init!
+		with \option("--new-globals", [[Set custom globals. Removes custom globals added
+previously.]])
+			\args "*"
+			\count "*"
+			\argname "<global>"
+			\action "concat"
+			\init!
+		with \option("--new-read-globals", [[Set read-only globals. Removes read-only globals added
+previously.]])
+			\args "*"
+			\count "*"
+			\argname "<global>"
+			\action "concat"
+			\init!
+		parser\flag "-c --compat", "Equivalent to --std max."
+		parser\flag "-d --allow-defined", "Allow defining globals implicitly by setting them."
+		parser\flag "-t --allow-defined-top", [[Allow defining globals implicitly by setting them in
+the top level scope.]]
+		parser\flag "-m --module", [[Limit visibility of implicitly defined globals to
+their files.]]
 
-fh\close!
-os.remove fn
+		with \option "--ignore -i", [[Filter out warnings matching these patterns.
+If a pattern contains slash, part before slash matches
+warning code and part after it matches name of related
+variable. Otherwise, if the pattern contains letters
+or underscore, it matches name of related variable.
+Otherwise, the pattern matches warning code.]]
+			\args "+"
+			\count "*"
+			\argname "<patt>"
+			\action "concat"
+			\init!
+		with \option "--enable -e", "Do not filter out warnings matching these patterns."
+			\args "+"
+			\count "*"
+			\argname "<patt>"
+			\action "concat"
+			\init!
+		with \option("--only -o", "Filter out warnings not matching these patterns.")
+			\args "+"
+			\count "*"
+			\argname "<patt>"
+			\action "concat"
+			\init!
 
--- $ moonc -X target > mooncx
-mooncx, ec = Cmd("moonc")\arg("-X", target)\run!
+		with \flag "--no-inline", "Disable inline options."
+			\target"inline"
+			\action"store_false"
 
-if ec > 0 then err_msg true, nil, mooncx
+		\mutex \option("--config", "Path to configuration file. (default: #{lc.config.default_path})"), \flag("--no-config", "Do not look up configuration file.")
 
-buf = {}
+		\option "--filename", [[Use another filename in output and for selecting\nconfiguration overrides.]]
 
-for l in mooncx\gmatch "(.-)\n"
-	-- store b as lua linenumber, a as moon linenumber
-	b, a = l\match("^%d+%s+(%d+):%[.*%]%s+>>%s(%d+)")
+		with \option "--exclude-files", "Do not check files matching these globbing patterns."
+			\args "+"
+			\count "*"
+			\argname "<glob>"
+		with \option "--include-files", "Do not check files not matching these globbing\npatterns."
+			\args "+"
+			\count "*"
+			\argname "<glob>"
 
-	if b_ = tonumber b then buf[b_] = tonumber a
+		if lc.fs.has_lfs
+			\mutex \option("--cache", "Path to cache file.", default_cache_path)\defmode "arg", \flag("--no-cache", "Do not use cache.")
 
-lbuf = SetStore!
+		\option("-j --jobs", "Check <jobs> files in parallel (default: #{tostring("#{lc.multithreading.default_jobs})#{lc.multithreading.has_lanes and "" or "\nWarning: LuaLanes not found."}")}")\convert(tonumber)
 
-for l in luachk\gmatch "(.-)\n"
-	ln, warn = l\match(":(%d+):.-%s+(.*)$")
+		\option "--formatter" , [[Use custom formatter.
+<formatter> must be a module name or one of:
+   TAP - Test Anything Protocol formatter;
+   JUnit - JUnit XML formatter;
+   plain - simple warning-per-line formatter;
+   default - standard formatter.]]
 
-	if ln_ = tonumber ln then lbuf\add ln_, "W: #{target}:#{buf[ln_]}:#{warn}" if buf[ln_]
+		with \flag "-q --quiet", [[Suppress output for files without warnings.
+   -qq: Suppress output of warnings.
+   -qqq: Only print total number of warnings and
+      errors.]]
+			\count "0-3"
 
-lbuf\print!
+		\flag "--codes", "Show warning codes."
+		\flag "--ranges", "Show ranges of columns related to warnings."
+		\flag "--no-color", "Do not color output."
+
+		with \flag "--typecheck", "type checking with typedlua #{has_tl and "" or "\nWarning: TypedLua not found."}\n" .. [[
+   w - warning mode
+   s - strict mode
+]]
+			\args "0-1"
+			\argname "w|s"
+			\action "concat"
+			\init!
+
+		with \flag "-v --version"
+			\action ->
+				print lc.version.string
+				print "MoonScript #{ms.version}"
+				os.exit 0
+
+lcopts = lc.parser\parse!
+
+for input in *lcopts.files
+	ok, cont = pcall ->
+		io.close assert with file = io.open input
+			mooncode = file\read "*a"
+
+			-- moon to lua {{{
+			tree, errmsg = ms.parse.string mooncode
+			if errmsg then error errmsg
+
+			luacode, ok, errpos = ms.compile.tree tree
+			unless ok then error errpos
+
+			-- get lua linuenumbers corresponding to the moon code
+			posmap = ms.util.debug_posmap ok, mooncode, luacode
+			linebuf = setmetatable {}, __len: => @len
+
+			for l in (posmap.."\n")\gmatch".-\n"
+				lline, mline = l\match"^%d+%s+(%d+):%[.*%]%s+>>%s(%d+)"
+
+				if ll_ = math.tointeger lline
+					linebuf[ll_] = tonumber mline
+					linebuf.len = ll_
+			-- }}}
+
+			-- luacheck
+			chkresult = lc.check_strings {luacode}, lcopts
+
+			memotbl = {}
+
+			for warn in *chkresult[1] do if mline = linebuf[warn.line]
+				key = "#{mline}#{warncode[warn.code]}"
+				if memotbl[key] then continue
+				else
+					memotbl[key] = true
+					print"W: #{input}:#{mline}:#{warncode[warn.code]} '#{warn.name}'"
+
+			-- typecheck {{{
+			if has_tl and lcopts.typecheck
+				tcflag = table.concat lcopts.typecheck
+				TL_STRICT, TL_WARNINGS, TL_INTEGER = (tcflag\match"s" != nil), (tcflag\match"w" != nil), false
+				l_ast, perrmsg = tl.parser.parse luacode, input, TL_STRICT, TL_INTEGER
+
+				error perrmsg unless l_ast
+
+				tcerrmsg, _ = tl.typecheck.error_msgs (tl.typecheck.typecheck l_ast,luacode, input, TL_STRICT, TL_INTEGER), TL_WARNINGS
+			-- }}}
+
+				for tcwarn in tcerrmsg\gmatch".-\n"
+					lline = tcwarn\match "^.-:(%d+):"
+					io.write "W: #{tcwarn\gsub "^(.-:)%d+:%d+:%s*", "%1#{linebuf[math.tointeger lline]}:"}" if linebuf[math.tointeger lline]
+
+	unless ok
+		io.stderr\write cont..'\n'
 

@@ -263,16 +263,17 @@ for input in *lcopts.files
 			chkresult = lc.check_strings {luacode}, lcopts
 
 			memotbl = {}
-
 			for warn in *chkresult[1] do if mline = linebuf[warn.line]
 				key = "#{mline}#{warncode[warn.code]}"
 				if memotbl[key] then continue
 				else
 					memotbl[key] = true
-					print"W: #{input}:#{mline}:#{warncode[warn.code]} '#{warn.name}'"
+					print"W: #{input}:#{mline}: #{warncode[warn.code]} '#{warn.name}'"
 
 			-- typecheck {{{
 			if has_tl and lcopts.typecheck
+				nevertwice = {}
+
 				tcflag = table.concat lcopts.typecheck
 				TL_STRICT, TL_WARNINGS, TL_INTEGER = (tcflag\match"s" != nil), (tcflag\match"w" != nil), false
 				l_ast, perrmsg = tl.parser.parse luacode, input, TL_STRICT, TL_INTEGER
@@ -280,11 +281,17 @@ for input in *lcopts.files
 				error perrmsg unless l_ast
 
 				tcerrmsg, _ = tl.typecheck.error_msgs (tl.typecheck.typecheck l_ast,luacode, input, TL_STRICT, TL_INTEGER), TL_WARNINGS
-			-- }}}
 
 				for tcwarn in tcerrmsg\gmatch".-\n"
 					lline = tcwarn\match "^.-:(%d+):"
-					io.write "W: #{tcwarn\gsub "^(.-:)%d+:%d+:%s*", "%1#{linebuf[math.tointeger lline]}:"}" if linebuf[math.tointeger lline]
+
+					if linebuf[math.tointeger lline]
+						msg = "W: #{tcwarn\gsub("^(.-:)%d+:%d+", "%1#{linebuf[math.tointeger lline]}")\gsub("warning,", "[type]")\gsub("type error, ","")}"
+
+						unless nevertwice[msg]
+							io.write msg unless msg\match "attempt to access undeclared global"
+							nevertwice[msg] = 1
+			-- }}}
 
 	unless ok
 		io.stderr\write cont..'\n'

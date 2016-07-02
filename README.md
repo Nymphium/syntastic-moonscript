@@ -38,6 +38,7 @@ $ make
 - (MoonScript)
 - [luacheck](http://luacheck.readthedocs.org/)
 - The Silver Searcher(`ag`)
+
 #### optional
   - [Typed Lua](https://github.com/andremm/typedlua)
 

@@ -286,7 +286,7 @@ for input in *lcopts.files
 					lline = tcwarn\match "^.-:(%d+):"
 
 					if linebuf[math.tointeger lline]
-						msg = "W: #{tcwarn\gsub("^(.-:)%d+:%d+", "%1#{linebuf[math.tointeger lline]}")\gsub("warning,", "[type]")\gsub("type error, ","")}"
+						msg = "W: #{tcwarn\gsub("^(.-:)%d+:%d+", "%1#{linebuf[math.tointeger lline]}")\gsub("warning,", "[type] ")\gsub("type error,","[type]")}"
 
 						unless nevertwice[msg]
 							io.write msg unless msg\match "attempt to access undeclared global"

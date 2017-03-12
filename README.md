@@ -18,8 +18,15 @@ NeoBundle 'nymphium/syntastic-moonscript', {
 " or add directorypath to `make':
 "...
 " \	'build' :  {
-" \		'linux' : 'make BINPATH=path/to/bin'
+" \		'linux' : 'make link BINPATH=path/to/bin'
 " \		}
+"...
+
+" if you use Neovim then pass a variable `VIM=nvim`
+"...
+\	'build' :  {
+\		'linux' : 'make neobundle VIM=nvim'
+\		}
 "...
 
 let g:syntastic_moon_checkers = [..., 'moonc', 'mooncheck', ...]
@@ -37,7 +44,6 @@ $ make
 - (Vim)
 - (MoonScript)
 - [luacheck](http://luacheck.readthedocs.org/)
-- The Silver Searcher(`ag`)
 
 ### Options
 same as `luacheck`

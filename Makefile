@@ -1,55 +1,69 @@
-MKDIR = mkdir
-LN = ln
-ECHO = echo
-MAKE = make
-CP = cp
-RM = rm
-LUACHECK = luacheck
+MKDIR=mkdir
+LN=ln
+ECHO=echo
+CP=cp
+RM=rm
+LUACHECK=luacheck
 BINPATH ?= $(HOME)/bin
-FTPLUGIN = ftplugin/moon.vim
 
-PLUGDIR_ = $(shell pwd)
-SYNTASTICDIR = $(HOME)/.vim/syntax_checkers/moon
-MOONCHECK = mooncheck
-MOONC = moonc
-MOONCLINT = moonclint
+VIM ?= nvim
+NVIM_LINKDIR=$(HOME)/.config/nvim/syntax_checkers
 
-BRANCH = $(shell ./git_current_branch.sh)
+PLUGDIR_=$(HOME)/.vim/bundle/syntastic-moonscript
+SYNTAXDIR=$(HOME)/.vim/syntax_checkers
+SYNTAXDIR_MOON=$(SYNTAXDIR)/moon
+FTPLUGINDIR=$(PLUGDIR)/ftplugin
+FTPLUGIN=$(FTPLUGINDIR)/moon.vim
+MOONCHECK=mooncheck
+MOONC=moonc
+MOONCLINT=moonclint
+BRSCRIPT=git_current_branch.sh
+
+BRANCH=$(shell ./$(BRSCRIPT))
 
 ifneq ($(BRANCH),master)
-	PLUGDIR = $(PLUGDIR_)_$(BRANCH)
+	PLUGDIR=$(PLUGDIR_)_$(BRANCH)
 else
-	PLUGDIR = $(PLUGDIR_)
+	PLUGDIR=$(PLUGDIR_)
 endif
 
+PLUGCONTENTS=$(addprefix $(PLUGDIR)/, $(MOONCHECK) $(MOONCLINT) $(BRSCRIPT))
+SYNTAXCONTENTS=$(addprefix $(SYNTAXDIR_MOON)/, $(MOONCHECK).vim $(MOONC).vim)
 
-ERRORMSG = "ERROR: not exist 'luacheck', install it before"
+ERRORMSG="ERROR: not exist 'luacheck', install it before"
 
-.PHONY: all neobundle mk_syntaxdir lnk luacheckcheck clean
+.PHONY: all neobundle mkdir link luacheckcheck clean
 
-all: lnk
+local_neobundle: neobundle $(PLUGCONTENTS) $(SYNTAXCONTENTS)
+
+link: luacheckcheck mkdir
 	-$(LN) -s $(PLUGDIR)/$(MOONCHECK) $(BINPATH)
 	-$(LN) -s $(PLUGDIR)/$(MOONCLINT) $(BINPATH)
 
-neobundle: lnk
-	$(ECHO) 'let g:syntastic_moon_mooncheck_exec = "$(PLUGDIR)/$(MOONCHECK)"' > $(FTPLUGIN)
-	$(ECHO) 'let g:syntastic_moon_moonc_exec = "$(PLUGDIR)/$(MOONCLINT)"' >> $(FTPLUGIN)
+neobundle: luacheckcheck mkdir
+	$(ECHO) 'let g:syntastic_moon_$(MOONCHECK)_exec = "$(PLUGDIR)/$(MOONCHECK)"' > $(FTPLUGIN)
+	$(ECHO) 'let g:syntastic_moon_$(MOONC)_exec = "$(PLUGDIR)/$(MOONCLINT)"' >> $(FTPLUGIN)
 
-mk_syntaxdir: luacheckcheck
-	$(MKDIR) -p $(SYNTASTICDIR)
+$(PLUGCONTENTS) $(SYNTAXCONTENTS):
+	$(CP) $(PWD)/$(shell basename $@) $@
 
-lnk: mk_syntaxdir
-	$(CP) $(PLUGDIR_)/$(MOONCHECK).vim $(SYNTASTICDIR)
-	$(CP) $(PLUGDIR_)/$(MOONC).vim $(SYNTASTICDIR)
+mkdir: $(FTPLUGINDIR) $(SYNTAXDIR_MOON) $(NVIM_LINKDIR)
 
-luacheckcheck: clean
-	$(LUACHECK) --version
+$(FTPLUGINDIR) $(SYNTAXDIR_MOON):
+	$(MKDIR) -p $@
 
+luacheckcheck:
+	$(LUACHECK) --version || $(ECHO) $(ERRORMSG)
+
+$(NVIM_LINKDIR):
+ifeq ($(VIM),nvim)
+	$(LN) -s $(SYNTAXDIR) $@
+endif
 
 clean:
-	-$(RM) $(SYNTASTICDIR)/$(MOONCHECK).vim
-	-$(RM) $(SYNTASTICDIR)/$(MOONC).vim
+	-$(RM) $(SYNTAXCONTENTS)
+	-$(RM) -r $(PLUGDIR)
 	-$(RM) $(BINPATH)/$(MOONCHECK)
 	-$(RM) $(BINPATH)/$(MOONCLINT)
-	-$(RM) $(FTPLUGIN)
+	-$(RM) $(NVIM_LINKDIR)
 

@@ -8,7 +8,7 @@ LUACHECK = luacheck
 BINPATH ?= $(HOME)/bin
 FTPLUGIN = ftplugin/moon.vim
 
-PLUGDIR_ = $(HOME)/.vim/bundle/syntastic-moonscript
+PLUGDIR_ = $(shell pwd)
 SYNTASTICDIR = $(HOME)/.vim/syntax_checkers/moon
 MOONCHECK = mooncheck
 MOONC = moonc
@@ -39,8 +39,8 @@ mk_syntaxdir: luacheckcheck
 	$(MKDIR) -p $(SYNTASTICDIR)
 
 lnk: mk_syntaxdir
-	-$(CP) $(PLUGDIR_)/$(MOONCHECK).vim $(SYNTASTICDIR)
-	-$(CP) $(PLUGDIR_)/$(MOONC).vim $(SYNTASTICDIR)
+	$(CP) $(PLUGDIR_)/$(MOONCHECK).vim $(SYNTASTICDIR)
+	$(CP) $(PLUGDIR_)/$(MOONC).vim $(SYNTASTICDIR)
 
 luacheckcheck: clean
 	$(LUACHECK) --version

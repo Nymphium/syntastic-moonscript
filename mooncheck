@@ -268,7 +268,7 @@ for input in *lcopts.files
 				if memotbl[key] then continue
 				else
 					memotbl[key] = true
-					print"W: #{input}:#{mline}: #{warncode[warn.code]} '#{warn.name}'"
+					print"W: #{input}:#{mline}:#{warncode[warn.code]} '#{warn.name}'"
 
 			-- typecheck {{{
 			if has_tl and lcopts.typecheck
@@ -286,11 +286,11 @@ for input in *lcopts.files
 					lline = tcwarn\match "^.-:(%d+):"
 
 					if linebuf[math.tointeger lline]
-						msg = "W: #{tcwarn\gsub("^(.-:)%d+:%d+", "%1#{linebuf[math.tointeger lline]}")\gsub("warning,", "[type] ")\gsub("type error,","[type]")}"
+						msg = "W: #{tcwarn\gsub("^(.-:)%d+:%d+", "%1#{linebuf[math.tointeger lline]}")\gsub("%s*warning,", "[type] ")\gsub("%s*type error,","[type]")}"
 
 						unless nevertwice[msg]
 							io.write msg unless msg\match "attempt to access undeclared global"
-							nevertwice[msg] = 1
+							nevertwice[msg] = true
 			-- }}}
 
 	unless ok

@@ -26,7 +26,7 @@ set cpo&vim
 function! SyntaxCheckers_moon_mooncheck_GetLocList() dict
     let makeprg = self.makeprgBuild({})
 
-    let errorformat = '%t: %f:%l: %m,%-G%.%#'
+    let errorformat = '%t: %f:%l: %m,%f:%l %m,%-G%.%#'
 
     return SyntasticMake({
         \ 'makeprg': makeprg,

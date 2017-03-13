@@ -34,13 +34,13 @@ ERRORMSG="ERROR: not exist 'luacheck', install it before"
 
 .PHONY: all neobundle mkdir link luacheckcheck clean
 
-local_neobundle: neobundle $(PLUGCONTENTS) $(SYNTAXCONTENTS)
+local_neobundle: neobundle $(PLUGCONTENTS)
 
-link: luacheckcheck mkdir
+link: luacheckcheck mkdir $(SYNTAXCONTENTS)
 	-$(LN) -s $(PLUGDIR)/$(MOONCHECK) $(BINPATH)
 	-$(LN) -s $(PLUGDIR)/$(MOONCLINT) $(BINPATH)
 
-neobundle: luacheckcheck mkdir
+neobundle: luacheckcheck mkdir $(SYNTAXCONTENTS)
 	$(ECHO) 'let g:syntastic_moon_$(MOONCHECK)_exec = "$(PLUGDIR)/$(MOONCHECK)"' > $(FTPLUGIN)
 	$(ECHO) 'let g:syntastic_moon_$(MOONC)_exec = "$(PLUGDIR)/$(MOONCLINT)"' >> $(FTPLUGIN)
 

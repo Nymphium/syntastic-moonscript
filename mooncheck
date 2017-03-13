@@ -1,6 +1,5 @@
 #!/usr/bin/env moon
 
-
 ms = do
 	parse = require'moonscript.parse'
 	compile = require'moonscript.compile'
@@ -11,56 +10,14 @@ ms = do
 
 lc = do
 	luacheck = require "luacheck"
+	format = require"luacheck.format"
 	argparse = require "luacheck.argparse"
 	config = require "luacheck.config"
 	multithreading = require "luacheck.multithreading"
 	version = require "luacheck.version"
 	fs = require "luacheck.fs"
 
-	setmetatable {:argparse, :config, :multithreading, :version, :fs}, __index: luacheck
-
-warncode = {
-	["011"]: "A syntax error"
-	["021"]: "An invalid inline option"
-	["022"]: "An unpaired inline push directive"
-	["023"]: "An unpaired inline pop directive"
-	["111"]: "Setting an undefined global variable"
-	["112"]: "Mutating an undefined global variable"
-	["113"]: "Accessing an undefined global variable"
-	["121"]: "Setting a read-only global variable"
-	["122"]: "Mutating a read-only global variable"
-	["131"]: "Unused implicitly defined global variable"
-	["211"]: "Unused local variable"
-	["212"]: "Unused argument"
-	["213"]: "Unused loop variable"
-	["221"]: "Local variable is accessed but never set"
-	["231"]: "Local variable is set but never accessed"
-	["232"]: "An argument is set but never accessed"
-	["233"]: "Loop variable is set but never accessed"
-	["311"]: "Value assigned to a local variable is unused"
-	["312"]: "Value of an argument is unused"
-	["313"]: "Value of a loop variable is unused"
-	["314"]: "Value of a field in a table literal is unused"
-	["321"]: "Accessing uninitialized local variable"
-	["411"]: "Redefining a local variable"
-	["412"]: "Redefining an argument"
-	["413"]: "Redefining a loop variable"
-	["421"]: "Shadowing a local variable"
-	["422"]: "Shadowing an argument"
-	["423"]: "Shadowing a loop variable"
-	["431"]: "Shadowing an upvalue"
-	["432"]: "Shadowing an upvalue argument"
-	["433"]: "Shadowing an upvalue loop variable"
-	["511"]: "Unreachable code"
-	["512"]: "Loop can be executed at most once"
-	["521"]: "Unused label"
-	["531"]: "Left-hand side of an assignment is too short"
-	["532"]: "Left-hand side of an assignment is too long"
-	["541"]: "An empty do end block"
-	["542"]: "An empty if branch"
-	["551"]: "An empty statement"
-}
-
+	setmetatable {:argparse, :config, :format, :multithreading, :version, :fs}, __index: luacheck
 
 default_cache_path = ".luacheckcache"
 
@@ -228,13 +185,21 @@ for input in *lcopts.files
 			moontext = file\read "*a"
 
 			tree, errmsg = ms.parse.string moontext
-			if errmsg then error errmsg
 
-			luacode, ok, errpos = ms.compile.tree tree
-			unless ok then error errpos
+			if errmsg
+				msg, pos = errmsg\match "^Failed to parse:%s*(.*)\n%s*%[(%d+)%]"
+				msg = #msg > 0 and msg or "Failed to parse"
+				print "#{input}:#{pos}: #{msg}"
+				os.exit 1
 
-			posmap = ms.util.debug_posmap ok, moontext, luacode
-			chkresult = lc.check_strings {luacode}, lcopts
+			luacode, it, errpos = ms.compile.tree tree
+			unless it
+				print errpos
+				os.exit 1
+
+			posmap = ms.util.debug_posmap it, moontext, luacode
+
+      chkresult = lc.check_strings {luacode}, lcopts
 
 			linebuf = setmetatable {}, __len: => @len
 
@@ -248,11 +213,11 @@ for input in *lcopts.files
 			memotbl = {}
 
 			for warn in *chkresult[1] do if mline = linebuf[warn.line]
-				key = "#{mline}#{warncode[warn.code]}"
+				key = "#{lc.format.get_message warn}"
 				if memotbl[key] then continue
 				else
 					memotbl[key] = true
-					print"W: #{input}:#{mline}:#{warncode[warn.code]} '#{warn.name}'"
+					print"#{input}:#{mline}: #{key}"
 
 	unless ok
 		io.stderr\write cont..'\n'

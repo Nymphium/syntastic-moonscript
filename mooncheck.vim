@@ -9,13 +9,8 @@
 "             See http://sam.zoy.org/wtfpl/COPYING for more details.
 "============================================================================
 
-if exists('g:syntastic_extra_filetypes')
-    call add(g:syntastic_extra_filetypes, 'moon')
-else
-    let g:syntastic_extra_filetypes = ['moon']
-endif
 
-if exists("g:loaded_syntastic_moon_mooncheck_checker")
+if exists('g:loaded_syntastic_moon_mooncheck_checker')
     finish
 endif
 let g:loaded_syntastic_moon_mooncheck_checker = 1
@@ -23,22 +18,50 @@ let g:loaded_syntastic_moon_mooncheck_checker = 1
 let s:save_cpo = &cpo
 set cpo&vim
 
+function! SyntaxCheckers_moon_mooncheck_GetHighlightRegex(item)
+    let term = matchstr(a:item['text'], '\m''\zs\S\+\ze''')
+    if term !=# ''
+        return '\V\<' . escape(term, '\') . '\>'
+    endif
+
+    let term = matchstr(a:item['text'], '\m\(accessing undefined\|setting non-standard global\|' .
+                \ 'setting non-module global\|unused global\) variable \zs\S\+')
+    if term ==# ''
+        let term = matchstr(a:item['text'], '\mvariable \zs\S\+\ze was previously defined')
+    endif
+    if term ==# ''
+        let term = matchstr(a:item['text'], '\munused \(variable\|argument\|loop variable\) \zs\S\+')
+    endif
+    if term ==# ''
+        let term = matchstr(a:item['text'], '\m\(value assigned to variable\|value of argument\|' .
+                \ 'value of loop variable\) \zs\S\+')
+    endif
+    if term ==# ''
+        let term = matchstr(a:item['text'], '\mvariable \zs\S\+\ze is never set')
+    endif
+
+    return term !=# '' ? '\V\<' . escape(term, '\') . '\>' : ''
+endfunction
+
 function! SyntaxCheckers_moon_mooncheck_GetLocList() dict
     let makeprg = self.makeprgBuild({})
 
-    let errorformat = '%t: %f:%l: %m,%f:%l %m,%-G%.%#'
+    let errorformat =
+        \ '%f:%l: %m,'.
+        \ '%-G%.%#'
 
     return SyntasticMake({
         \ 'makeprg': makeprg,
         \ 'errorformat': errorformat,
         \ 'subtype': 'Style',
-        \ 'defaults': {'bufnr': bufnr(''), 'text': 'Syantax Error', 'type': 'W' },
+        \ 'defaults': { 'type': 'W' },
         \ 'returns': [0, 1, 2] })
 endfunction
 
 call g:SyntasticRegistry.CreateAndRegisterChecker({
     \ 'filetype': 'moon',
-    \ 'name': 'mooncheck'})
+    \ 'name': 'mooncheck' })
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
+

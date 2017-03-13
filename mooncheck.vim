@@ -46,15 +46,13 @@ endfunction
 function! SyntaxCheckers_moon_mooncheck_GetLocList() dict
     let makeprg = self.makeprgBuild({})
 
-    let errorformat =
-        \ '%f:%l: %m,'.
-        \ '%-G%.%#'
+    let errorformat = '%E%f:%l: Error: %m,' .
+		\ '%W%f:%l: %m,' .  '%-G%.%#'
 
     return SyntasticMake({
         \ 'makeprg': makeprg,
         \ 'errorformat': errorformat,
         \ 'subtype': 'Style',
-        \ 'defaults': { 'type': 'W' },
         \ 'returns': [0, 1, 2] })
 endfunction
 

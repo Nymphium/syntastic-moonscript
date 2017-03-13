@@ -188,12 +188,14 @@ for input in *lcopts.files
 
 			if errmsg
 				msg, pos = errmsg\match "^Failed to parse:%s*(.*)\n%s*%[(%d+)%]"
-				msg = #msg > 0 and msg or "Failed to parse"
-				error "#{input}:#{pos}: #{msg}"
+				msg = #msg > 0 and "Error: #{msg}" or "Error: Failed to parse"
+				io.stderr\write "#{input}:#{pos}: #{msg}\n"
+				os.exit 1
 
 			luacode, it, errpos = ms.compile.tree tree
 			unless it
-				error errpos
+				io.stderr\write errpos .. '\n'
+				os.exit 1
 
 			posmap = ms.util.debug_posmap it, moontext, luacode
 			chkresult = lc.check_strings {luacode}, lcopts

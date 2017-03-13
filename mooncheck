@@ -198,9 +198,7 @@ for input in *lcopts.files
 				os.exit 1
 
 			posmap = ms.util.debug_posmap it, moontext, luacode
-
-      chkresult = lc.check_strings {luacode}, lcopts
-
+			chkresult = lc.check_strings {luacode}, lcopts
 			linebuf = setmetatable {}, __len: => @len
 
 			for l in (posmap.."\n")\gmatch".-\n"

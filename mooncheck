@@ -105,7 +105,12 @@ previously.]])
 the top level scope.]])
 		parser\flag("-m --module", [[Limit visibility of implicitly defined globals to
 their files.]])
-
+		with \option "--max-line-length", "Set maximum allowed line length (default: 120)."
+			\argname "<length>"
+			\convert(tonumber)
+		with \flag "--no-max-line-length", "Do not limit line length."
+			\target "max_line_length"
+			\action "store_false"
 		with \option("--ignore -i", [[Filter out warnings matching these patterns.
 If a pattern contains slash, part before slash matches
 warning code and part after it matches name of related
